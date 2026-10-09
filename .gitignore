@@ -1,0 +1,8 @@
+build/
+data/
+results.json
+*.o
+*.a
+*.itch
+*.gz
+.DS_Store

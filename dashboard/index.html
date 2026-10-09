@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>OrderFlow Engine | Poorvi Patil</title>
+<style>
+  :root {
+    --bg: #0d1117;
+    --card: #161b22;
+    --border: #30363d;
+    --accent: #58a6ff;
+    --green: #3fb950;
+    --red: #f85149;
+    --muted: #8b949e;
+    --text: #e6edf3;
+    --subtext: #c9d1d9;
+    --font: 'Inter', system-ui, sans-serif;
+    --mono: 'JetBrains Mono', 'Fira Code', monospace;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: var(--bg); color: var(--text); font-family: var(--font);
+         font-size: 14px; line-height: 1.6; }
+
+  header {
+    border-bottom: 1px solid var(--border);
+    padding: 20px 32px;
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  header h1 { font-size: 18px; font-weight: 600; color: var(--text); }
+  header h1 span { color: var(--accent); }
+  .tag {
+    font-family: var(--mono); font-size: 11px;
+    padding: 2px 10px; border-radius: 20px;
+    background: #1f3a5f; color: var(--accent);
+    border: 1px solid #2f5a9f;
+  }
+
+  .main { max-width: 1100px; margin: 0 auto; padding: 28px 24px; }
+
+  .status-bar {
+    background: var(--card); border: 1px solid var(--border);
+    border-radius: 8px; padding: 12px 20px;
+    display: flex; align-items: center; gap: 12px; margin-bottom: 28px;
+    font-family: var(--mono); font-size: 12px; color: var(--muted);
+  }
+  .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--green); }
+  .status-bar b { color: var(--text); }
+
+  .metrics-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 14px; margin-bottom: 28px;
+  }
+  .metric-card {
+    background: var(--card); border: 1px solid var(--border);
+    border-radius: 8px; padding: 18px 20px;
+  }
+  .metric-card .label { font-size: 11px; color: var(--muted); text-transform: uppercase;
+                         letter-spacing: 0.05em; margin-bottom: 8px; }
+  .metric-card .value { font-family: var(--mono); font-size: 26px; font-weight: 700;
+                         color: var(--accent); }
+  .metric-card .unit { font-size: 12px; color: var(--muted); margin-top: 2px; }
+
+  .section { background: var(--card); border: 1px solid var(--border);
+              border-radius: 8px; padding: 20px 24px; margin-bottom: 20px; }
+  .section h2 { font-size: 13px; font-weight: 600; color: var(--muted);
+                 text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 16px; }
+
+  table { width: 100%; border-collapse: collapse; font-family: var(--mono); font-size: 13px; }
+  th { text-align: left; color: var(--muted); font-size: 11px; padding: 0 12px 10px 0;
+        text-transform: uppercase; letter-spacing: 0.05em; font-weight: 500; }
+  td { padding: 8px 12px 8px 0; border-top: 1px solid var(--border); color: var(--subtext); }
+  td.sym { color: var(--text); font-weight: 600; }
+  td.pos { color: var(--green); }
+  td.neg { color: var(--red); }
+
+  .latency-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
+  .lat-box { background: #0d1117; border: 1px solid var(--border);
+              border-radius: 6px; padding: 14px 16px; text-align: center; }
+  .lat-box .p { font-size: 11px; color: var(--muted); margin-bottom: 6px; }
+  .lat-box .v { font-family: var(--mono); font-size: 20px; font-weight: 700; color: var(--text); }
+  .lat-box .u { font-size: 11px; color: var(--muted); }
+
+  .note { font-size: 12px; color: var(--muted); margin-top: 20px;
+           border-top: 1px solid var(--border); padding-top: 16px; line-height: 1.7; }
+  .note a { color: var(--accent); text-decoration: none; }
+  .note a:hover { text-decoration: underline; }
+
+  #loading { text-align: center; color: var(--muted); padding: 60px;
+              font-family: var(--mono); }
+  #error-msg { color: var(--red); text-align: center; padding: 40px;
+                font-family: var(--mono); display: none; }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>Order<span>Flow</span> Engine</h1>
+  <span class="tag">C++20 + NASDAQ ITCH 5.0</span>
+</header>
+
+<div class="main">
+  <div id="loading">Loading latest results...</div>
+  <div id="error-msg">results.json not found. Run the C++ engine first to generate it.</div>
+
+  <div id="content" style="display:none">
+    <div class="status-bar">
+      <div class="dot"></div>
+      <span>Last run: <b id="run-dataset">--</b></span>
+      <span style="margin-left:auto">Built with C++20, pybind11, GoogleTest</span>
+    </div>
+
+    <div class="metrics-grid">
+      <div class="metric-card">
+        <div class="label">Messages Parsed</div>
+        <div class="value" id="m-msgs">--</div>
+        <div class="unit">ITCH 5.0 events</div>
+      </div>
+      <div class="metric-card">
+        <div class="label">Throughput</div>
+        <div class="value" id="m-tput">--</div>
+        <div class="unit">million msg / sec</div>
+      </div>
+      <div class="metric-card">
+        <div class="label">Elapsed</div>
+        <div class="value" id="m-elapsed">--</div>
+        <div class="unit">milliseconds</div>
+      </div>
+      <div class="metric-card">
+        <div class="label">Books Tracked</div>
+        <div class="value" id="m-books">--</div>
+        <div class="unit">symbols</div>
+      </div>
+      <div class="metric-card">
+        <div class="label">Peak Memory</div>
+        <div class="value" id="m-mem">--</div>
+        <div class="unit">MB RSS</div>
+      </div>
+    </div>
+
+    <div class="section">
+      <h2>Per-event Latency (end-to-end parse + book update)</h2>
+      <div class="latency-grid">
+        <div class="lat-box"><div class="p">p50</div>
+          <div class="v" id="l-p50">--</div><div class="u">ns</div></div>
+        <div class="lat-box"><div class="p">p99</div>
+          <div class="v" id="l-p99">--</div><div class="u">ns</div></div>
+        <div class="lat-box"><div class="p">p99.9</div>
+          <div class="v" id="l-p999">--</div><div class="u">ns</div></div>
+      </div>
+    </div>
+
+    <div class="section">
+      <h2>Top Symbols by Order-Flow Imbalance</h2>
+      <table>
+        <thead>
+          <tr>
+            <th>#</th><th>Symbol</th><th>OFI</th>
+            <th>Spread (bps)</th><th>Activity (msgs)</th>
+          </tr>
+        </thead>
+        <tbody id="ofi-table"></tbody>
+      </table>
+    </div>
+
+    <div class="note">
+      <b>Data:</b> NASDAQ TotalView-ITCH 5.0 sample data from
+      <a href="https://emi.nasdaq.com/ITCH/Nasdaq%20ITCH/" target="_blank">emi.nasdaq.com</a>.
+      OFI = (bid depth - ask depth) / (bid depth + ask depth) at level 1.
+      Spread in basis points = (ask - bid) / mid x 10,000.
+      Benchmarks run on a single thread, no SIMD, no lock-free queues (yet).
+      Source: <a href="https://github.com/poorvipatil21/orderflow-cpp" target="_blank">github.com/poorvipatil21/orderflow-cpp</a>
+    </div>
+  </div>
+</div>
+
+<script>
+async function load() {
+  try {
+    const r = await fetch('results.json?' + Date.now());
+    if (!r.ok) throw new Error('not found');
+    const d = await r.json();
+
+    document.getElementById('loading').style.display = 'none';
+    document.getElementById('content').style.display = '';
+
+    document.getElementById('run-dataset').textContent = d.dataset || 'ITCH sample';
+    document.getElementById('m-msgs').textContent    = (d.messages_parsed || 0).toLocaleString();
+    document.getElementById('m-tput').textContent    = (d.throughput_mps || 0).toFixed(2);
+    document.getElementById('m-elapsed').textContent = (d.elapsed_ms || 0).toFixed(1);
+    document.getElementById('m-books').textContent   = (d.books_tracked || 0).toLocaleString();
+    document.getElementById('m-mem').textContent     = ((d.peak_rss_kb || 0) / 1024).toFixed(0);
+    document.getElementById('l-p50').textContent     = (d.latency_p50_ns || 0).toFixed(0);
+    document.getElementById('l-p99').textContent     = (d.latency_p99_ns || 0).toFixed(0);
+    document.getElementById('l-p999').textContent    = (d.latency_p999_ns || 0).toFixed(0);
+
+    const tbody = document.getElementById('ofi-table');
+    (d.top_ofi || []).forEach((row, i) => {
+      const ofi = parseFloat(row.ofi || 0);
+      const cls = ofi > 0 ? 'pos' : ofi < 0 ? 'neg' : '';
+      tbody.innerHTML += `<tr>
+        <td>${i+1}</td>
+        <td class="sym">${row.symbol}</td>
+        <td class="${cls}">${ofi >= 0 ? '+' : ''}${ofi.toFixed(4)}</td>
+        <td>${parseFloat(row.spread_bps || 0).toFixed(2)}</td>
+        <td>${parseInt(row.activity || 0).toLocaleString()}</td>
+      </tr>`;
+    });
+  } catch(e) {
+    document.getElementById('loading').style.display = 'none';
+    document.getElementById('error-msg').style.display = '';
+  }
+}
+load();
+</script>
+</body>
+</html>

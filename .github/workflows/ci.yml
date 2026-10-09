@@ -1,0 +1,84 @@
+name: Build, Test & Deploy Dashboard
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  schedule:
+    # Run every weekday at 10:30 UTC (after US market open, skips weekends)
+    - cron: '30 10 * * 1-5'
+  workflow_dispatch:
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update -q
+          sudo apt-get install -y cmake g++ git
+
+      - name: Configure (Release)
+        run: cmake -B build -DCMAKE_BUILD_TYPE=Release
+
+      - name: Build
+        run: cmake --build build --parallel $(nproc)
+
+      - name: Run tests
+        run: ctest --test-dir build --output-on-failure
+
+      - name: Download ITCH sample data
+        run: |
+          mkdir -p data
+          # Official NASDAQ ITCH 5.0 sample file (publicly available)
+          wget -q "https://emi.nasdaq.com/ITCH/Nasdaq%20ITCH/01302020.NASDAQ_ITCH50.gz" \
+               -O data/sample.gz || echo "Download failed, using synthetic data"
+          if [ -f data/sample.gz ]; then
+            gunzip -f data/sample.gz
+            mv data/01302020.NASDAQ_ITCH50 data/sample.itch 2>/dev/null || \
+            mv data/sample data/sample.itch 2>/dev/null || true
+          fi
+
+      - name: Run engine on sample data
+        run: |
+          if [ -f data/sample.itch ]; then
+            ./build/orderflow data/sample.itch 5000000
+          else
+            echo "No ITCH data available. Skipping engine run."
+            # Create a placeholder results.json so the dashboard still deploys
+            cat > results.json <<'EOF'
+          {
+            "dataset": "sample not available - run locally with ITCH file",
+            "messages_parsed": 0,
+            "elapsed_ms": 0,
+            "throughput_mps": 0,
+            "latency_p50_ns": 0,
+            "latency_p99_ns": 0,
+            "latency_p999_ns": 0,
+            "peak_rss_kb": 0,
+            "books_tracked": 0,
+            "top_ofi": []
+          }
+          EOF
+          fi
+
+      - name: Copy results to dashboard
+        run: |
+          cp results.json dashboard/results.json
+
+      - name: Upload results artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: results-${{ github.run_number }}
+          path: results.json
+
+      - name: Deploy dashboard to GitHub Pages
+        if: github.ref == 'refs/heads/main'
+        uses: peaceiris/actions-gh-pages@v4
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./dashboard
+          commit_message: "Dashboard update - run #${{ github.run_number }}"

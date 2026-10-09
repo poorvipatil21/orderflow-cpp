@@ -1,0 +1,23 @@
+{
+  "dataset": "data/01302020.NASDAQ_ITCH50",
+  "messages_parsed": 423285709,
+  "elapsed_ms": 1.9e+06,
+  "throughput_mps": 0.222,
+  "latency_p50_ns": 2e+03,
+  "latency_p99_ns": 8e+03,
+  "latency_p999_ns": 5e+05,
+  "peak_rss_kb": 4095492,
+  "books_tracked": 8900,
+  "top_ofi": [
+    {"symbol": "SPXS", "ofi": 0, "spread_bps": 0, "activity": 226356},
+    {"symbol": "ERIC", "ofi": 0, "spread_bps": 0, "activity": 97593},
+    {"symbol": "SEIX", "ofi": 0, "spread_bps": 0, "activity": 70},
+    {"symbol": "FLLCU", "ofi": 0, "spread_bps": 0, "activity": 113},
+    {"symbol": "UAVS", "ofi": 0, "spread_bps": 0, "activity": 514},
+    {"symbol": "LDRS", "ofi": 0, "spread_bps": 0, "activity": 4073},
+    {"symbol": "VCIT", "ofi": 0, "spread_bps": 0, "activity": 31372},
+    {"symbol": "JNK", "ofi": 0, "spread_bps": 0, "activity": 137298},
+    {"symbol": "SIVR", "ofi": 0, "spread_bps": 0, "activity": 9598},
+    {"symbol": "FBSS", "ofi": 0, "spread_bps": 0, "activity": 519}
+  ]
+}
